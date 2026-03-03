@@ -1,0 +1,132 @@
+# Git ignore file for MEAN Stack Healthcare App
+# Tracks both backend (Node.js/Express) and frontend (Angular)
+
+# ============================================
+# BACKEND - Node.js / Express
+# ============================================
+
+# Dependencies
+backend/node_modules/
+backend/package-lock.json
+backend/yarn.lock
+
+# Environment variables (NEVER commit sensitive data)
+backend/.env
+backend/.env.local
+backend/.env.*.local
+
+# Logs
+backend/logs/
+backend/*.log
+backend/npm-debug.log*
+backend/yarn-debug.log*
+backend/yarn-error.log*
+
+# OS specific files
+backend/.DS_Store
+backend/Thumbs.db
+
+# IDE / Editor files
+backend/.vscode/
+backend/.idea/
+backend/*.swp
+backend/*.swo
+backend/.*~
+
+# Build outputs
+backend/dist/
+backend/build/
+
+# ============================================
+# FRONTEND - Angular
+# ============================================
+
+# Dependencies
+frontend/node_modules/
+frontend/package-lock.json
+frontend/yarn.lock
+
+# Angular specific
+frontend/.angular/
+frontend/dist/
+frontend/out-tsc/
+
+# Environment files (keep but don't commit secrets)
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# Logs
+frontend/logs/
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# OS specific files
+frontend/.DS_Store
+frontend/Thumbs.db
+
+# IDE / Editor files
+frontend/.vscode/
+frontend/.idea/
+frontend/*.swp
+frontend/*.swo
+frontend/.*~
+
+# Angular build cache
+frontend/.angular/cache/
+
+# Testing
+frontend/coverage/
+
+# ============================================
+# ROOT LEVEL
+# ============================================
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Certificates (if any)
+*.pem
+*.key
+*.crt
+
+# Temporary files
+*.tmp
+*.temp
+
+# ============================================
+# MISC
+# ============================================
+
+# Windows
+.windows-build-tools/
+
+# Mac
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+.X11-unix/
+
+# Editor directories and files
+out/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
