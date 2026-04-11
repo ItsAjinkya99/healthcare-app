@@ -1,6 +1,8 @@
 # Git ignore file for MEAN Stack Healthcare App
 # Tracks both backend (Node.js/Express) and frontend (Angular)
 
+node_modules/
+
 # ============================================
 # BACKEND - Node.js / Express
 # ============================================

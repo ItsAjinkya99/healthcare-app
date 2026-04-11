@@ -32,8 +32,9 @@ export class LoginComponent {
     this.auth.login({ email: this.email, password: this.password })
       .subscribe({
         next: (res) => {
-          this.auth.saveToken(res.token);
-          this.router.navigate(['/dashboard']);
+          this.auth.saveAccessToken(res.accessToken);
+          this.isLoading = false;
+          this.router.navigateByUrl('/dashboard');
         },
         error: (err) => {
           this.isLoading = false;

@@ -1,0 +1,102 @@
+<div class="add-patient-modal">
+  <div class="modal-overlay" (click)="onCancel()"></div>
+  
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Add New Patient</h2>
+      <button class="close-btn" (click)="onCancel()">×</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Success Message -->
+      <div class="alert alert-success" *ngIf="successMessage">
+        {{ successMessage }}
+      </div>
+
+      <!-- Error Message -->
+      <div class="alert alert-error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Form -->
+      <form (ngSubmit)="addPatient()" *ngIf="!successMessage">
+        <div class="form-group">
+          <label for="name">Full Name *</label>
+          <input
+            type="text"
+            id="name"
+            [(ngModel)]="formData.name"
+            name="name"
+            placeholder="Enter patient full name"
+            required
+            [disabled]="isLoading"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email *</label>
+          <input
+            type="email"
+            id="email"
+            [(ngModel)]="formData.email"
+            name="email"
+            placeholder="Enter patient email"
+            required
+            [disabled]="isLoading"
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="age">Age *</label>
+            <input
+              type="number"
+              id="age"
+              [(ngModel)]="formData.age"
+              name="age"
+              placeholder="Enter age"
+              min="1"
+              max="150"
+              required
+              [disabled]="isLoading"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="gender">Gender *</label>
+            <select
+              id="gender"
+              [(ngModel)]="formData.gender"
+              name="gender"
+              required
+              [disabled]="isLoading"
+            >
+              <option value="">Select Gender</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn-cancel"
+            (click)="onCancel()"
+            [disabled]="isLoading"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isLoading"
+          >
+            {{ isLoading ? 'Adding...' : 'Add Patient' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

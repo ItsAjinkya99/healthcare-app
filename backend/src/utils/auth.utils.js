@@ -24,35 +24,76 @@ async function comparePassword(plainPassword, hashedPassword) {
 }
 
 /**
- * Generate JWT token
+ * Generate JWT access token (short-lived: 15 minutes)
  */
-function generateToken(userId, role) {
+function generateAccessToken(userId, role, name, email) {
   try {
     const token = jwt.sign(
-      { id: userId, role: role },
+      { id: userId, role: role, name: name, email: email },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: "15m" }
     );
     return token;
   } catch (error) {
-    throw new Error("Error generating token: " + error.message);
+    throw new Error("Error generating access token: " + error.message);
   }
 }
 
 /**
- * Verify JWT token
+ * Generate JWT refresh token (long-lived: 7 days)
  */
-function verifyToken(token) {
+function generateRefreshToken(userId, role, name, email) {
+  try {
+    const token = jwt.sign(
+      { id: userId, role: role, name: name, email: email },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: "7d" }
+    );
+    return token;
+  } catch (error) {
+    throw new Error("Error generating refresh token: " + error.message);
+  }
+}
+
+/**
+ * Generate both access and refresh tokens
+ */
+function generateTokens(userId, role, name, email) {
+  return {
+    accessToken: generateAccessToken(userId, role, name, email),
+    refreshToken: generateRefreshToken(userId, role, name, email)
+  };
+}
+
+/**
+ * Verify JWT access token
+ */
+function verifyAccessToken(token) {
   try {
     return jwt.verify(token, process.env.JWT_SECRET);
   } catch (error) {
-    throw new Error("Invalid token: " + error.message);
+    throw new Error("Invalid access token: " + error.message);
+  }
+}
+
+/**
+ * Verify JWT refresh token
+ */
+function verifyRefreshToken(token) {
+  try {
+    return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+  } catch (error) {
+    throw new Error("Invalid refresh token: " + error.message);
   }
 }
 
 module.exports = {
   hashPassword,
   comparePassword,
-  generateToken,
-  verifyToken
+  generateTokens,
+  generateAccessToken,
+  generateRefreshToken,
+  verifyToken: verifyAccessToken,
+  verifyAccessToken,
+  verifyRefreshToken
 };

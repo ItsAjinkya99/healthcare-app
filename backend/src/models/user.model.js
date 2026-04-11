@@ -10,6 +10,10 @@ const schema = new mongoose.Schema({
     type: String,
     enum: ["ADMIN", "DOCTOR", "RECEPTIONIST"],
     default: "RECEPTIONIST"
+  },
+  refreshToken: {
+    type: String,
+    default: null
   }
 });
 
