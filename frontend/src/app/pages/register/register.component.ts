@@ -1,8 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { AppState } from '../../store/app.state';
+import { selectIsLoading, selectAuthError, selectIsLoggedIn } from '../../store/auth/auth.selectors';
+import { register } from '../../store/auth/auth.actions';
 
 @Component({
   selector: 'app-register',
@@ -11,7 +16,7 @@ import { Router } from '@angular/router';
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit, OnDestroy {
   name = '';
   email = '';
   password = '';
@@ -19,9 +24,42 @@ export class RegisterComponent {
   role = '';
   errorMessage = '';
   successMessage = '';
-  isLoading = false;
 
-  constructor(private auth: AuthService, private router: Router) {}
+  isLoading$!: any;
+  error$!: any;
+  isLoggedIn$!: any;
+
+  private destroy$ = new Subject<void>();
+
+  constructor(private store: Store<AppState>, private router: Router) {}
+
+  ngOnInit() {
+    // Initialize selectors after store is available
+    this.isLoading$ = this.store.select(selectIsLoading);
+    this.error$ = this.store.select(selectAuthError);
+    this.isLoggedIn$ = this.store.select(selectIsLoggedIn);
+
+    // If already logged in, redirect to dashboard
+    this.isLoggedIn$.pipe(takeUntil(this.destroy$)).subscribe((isLoggedIn: boolean) => {
+      if (isLoggedIn) {
+        this.router.navigateByUrl('/dashboard');
+      }
+    });
+
+    // Handle registration success
+    this.isLoggedIn$.pipe(takeUntil(this.destroy$)).subscribe((isLoggedIn: boolean) => {
+      if (isLoggedIn && this.successMessage) {
+        setTimeout(() => {
+          this.router.navigate(['/dashboard']);
+        }, 2000);
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   register() {
     if (!this.name || !this.email || !this.password || !this.confirmPassword || !this.role) {
@@ -39,26 +77,14 @@ export class RegisterComponent {
       return;
     }
 
-    this.isLoading = true;
     this.errorMessage = '';
+    this.successMessage = 'Account created successfully! Redirecting...';
 
-    this.auth.register({
+    this.store.dispatch(register({
       name: this.name,
       email: this.email,
       password: this.password,
       role: this.role
-    }).subscribe({
-      next: (res) => {
-        this.isLoading = false;
-        this.successMessage = 'Account created successfully! Redirecting to login...';
-        setTimeout(() => {
-          this.router.navigate(['/']);
-        }, 2000);
-      },
-      error: (err) => {
-        this.isLoading = false;
-        this.errorMessage = err.error?.message || 'Registration failed. Please try again.';
-      }
-    });
+    }));
   }
 }

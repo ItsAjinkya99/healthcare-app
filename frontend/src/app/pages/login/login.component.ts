@@ -1,9 +1,12 @@
 
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { AppState } from '../../store/app.state';
+import { selectIsLoading, selectAuthError, selectIsLoggedIn } from '../../store/auth/auth.selectors';
+import { login } from '../../store/auth/auth.actions';
 
 @Component({
   selector: 'app-login',
@@ -12,13 +15,30 @@ import { Router } from '@angular/router';
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   email = '';
   password = '';
   errorMessage = '';
-  isLoading = false;
 
-  constructor(private auth: AuthService, private router: Router) {}
+  isLoading$!: any;
+  error$!: any;
+  isLoggedIn$!: any;
+
+  constructor(private store: Store<AppState>, private router: Router) {}
+
+  ngOnInit() {
+    // Initialize selectors after store is available
+    this.isLoading$ = this.store.select(selectIsLoading);
+    this.error$ = this.store.select(selectAuthError);
+    this.isLoggedIn$ = this.store.select(selectIsLoggedIn);
+
+    // If already logged in, redirect to dashboard
+    this.isLoggedIn$.subscribe((isLoggedIn: boolean) => {
+      if (isLoggedIn) {
+        this.router.navigateByUrl('/dashboard');
+      }
+    });
+  }
 
   login() {
     if (!this.email || !this.password) {
@@ -26,20 +46,7 @@ export class LoginComponent {
       return;
     }
 
-    this.isLoading = true;
     this.errorMessage = '';
-
-    this.auth.login({ email: this.email, password: this.password })
-      .subscribe({
-        next: (res) => {
-          this.auth.saveAccessToken(res.accessToken);
-          this.isLoading = false;
-          this.router.navigateByUrl('/dashboard');
-        },
-        error: (err) => {
-          this.isLoading = false;
-          this.errorMessage = err.error?.message || 'Login failed. Please try again.';
-        }
-      });
+    this.store.dispatch(login({ email: this.email, password: this.password }));
   }
 }
