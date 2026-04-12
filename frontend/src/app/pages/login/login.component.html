@@ -3,9 +3,11 @@
     <h2>Healthcare Management System</h2>
     <p class="subtitle">Login to your account</p>
 
-    <div *ngIf="errorMessage" class="error-message">
-      {{ errorMessage }}
-    </div>
+    @if (error$ | async) {
+      <div class="error-message">
+        {{ error$ | async }}
+      </div>
+    }
 
     <form (ngSubmit)="login()" #loginForm="ngForm">
       <div class="form-group">
@@ -32,10 +34,10 @@
 
       <button 
         type="submit" 
-        [disabled]="isLoading"
+        [disabled]="(isLoading$ | async) || false"
         class="login-btn"
       >
-        {{ isLoading ? 'Logging in...' : 'Login' }}
+        {{ ((isLoading$ | async) || false) ? 'Logging in...' : 'Login' }}
       </button>
     </form>
 

@@ -3,8 +3,10 @@
     <div class="header-content">
       <h1>Healthcare Management System</h1>
       <div class="user-info">
-        <span class="user-name" *ngIf="currentUser">{{ currentUser.name || currentUser.email }}</span>
-        <span class="user-role">{{ currentUser?.role }}</span>
+        <div *ngIf="(currentUser$ | async) as user">
+          <span class="user-name">{{ user?.name || user?.email }}</span>
+          <span class="user-role">{{ user?.role }}</span>
+        </div>
         <button (click)="logout()" class="logout-btn">Logout</button>
       </div>
     </div>
@@ -17,97 +19,119 @@
     </div>
 
     <div class="content-grid">
-      <div class="card" *ngIf="isAdmin() || isDoctor()">
-        <h3>👨‍⚕️ Patients</h3>
-        <p>Manage patient records and appointments</p>
-      </div>
-
-      <div class="card" *ngIf="isAdmin()">
-        <h3>👥 Users</h3>
-        <p>Manage system users and permissions</p>
-      </div>
-
-      <div class="card" *ngIf="isAdmin() || isReceptionist()">
-        <h3>📅 Appointments</h3>
-        <p>Schedule and manage appointments</p>
-      </div>
-
-      <div class="card" *ngIf="isAdmin()">
-        <h3>📊 Reports</h3>
-        <p>View system analytics and reports</p>
-      </div>
+      @if (isAdmin$ | async) {
+        <div class="card">
+          <h3>👨‍⚕️ Patients</h3>
+          <p>Manage patient records and appointments</p>
+        </div>
+      }
+      @if (isAdmin$ | async) {
+        <div class="card">
+          <h3>👥 Users</h3>
+          <p>Manage system users and permissions</p>
+        </div>
+      }
+      @if ((isAdmin$ | async) || (isReceptionist$ | async)) {
+        <div class="card">
+          <h3>📅 Appointments</h3>
+          <p>Schedule and manage appointments</p>
+        </div>
+      }
+      @if (isAdmin$ | async) {
+        <div class="card">
+          <h3>📊 Reports</h3>
+          <p>View system analytics and reports</p>
+        </div>
+      }
     </div>
 
     <!-- Patients Section -->
-    <div class="patients-section" *ngIf="isAdmin() || isDoctor() || isReceptionist()">
-      <div class="section-header">
-        <h2>Patients</h2>
-        <button class="btn-add-patient" (click)="openAddPatientModal()" *ngIf="isAdmin() || isDoctor()" [disabled]="isLoadingPatients">
-          + Add Patient
-        </button>
-      </div>
+    @if ((isAdmin$ | async) || (isDoctor$ | async) || (isReceptionist$ | async)) {
+      <div class="patients-section">
+        <div class="section-header">
+          <h2>Patients</h2>
+          @if ((isAdmin$ | async) || (isDoctor$ | async)) {
+            <button class="btn-add-patient" (click)="openAddPatientModal()" [disabled]="(isLoadingPatients$ | async) || false">
+              + Add Patient
+            </button>
+          }
+        </div>
 
-      <!-- Loading State -->
-      <div class="loading-container" *ngIf="isLoadingPatients">
-        <div class="spinner"></div>
-        <p>Loading patients...</p>
-      </div>
+        <!-- Loading State -->
+        @if (isLoadingPatients$ | async) {
+          <div class="loading-container">
+            <div class="spinner"></div>
+            <p>Loading patients...</p>
+          </div>
+        }
 
-      <!-- Error State -->
-      <div class="alert alert-error" *ngIf="loadingError && !isLoadingPatients">
-        {{ loadingError }}
-        <button class="retry-btn" (click)="getPatients()">Retry</button>
-      </div>
+        <!-- Error State -->
+        @if ((loadingError$ | async) && !(isLoadingPatients$ | async)) {
+          <div class="alert alert-error">
+            {{ loadingError$ | async }}
+          </div>
+        }
 
-      <!-- Patients Table -->
-      <div class="patients-list" *ngIf="!isLoadingPatients && patient.length > 0">
-        <table class="patients-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Age</th>
-              <th>Gender</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let p of patient">
-              <td>{{ p.name }}</td>
-              <td>{{ p.email }}</td>
-              <td>{{ p.age }}</td>
-              <td>{{ p.gender }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- Patients Table -->
+        @if (!(isLoadingPatients$ | async)) {
+          <div *ngIf="(patients$ | async) as patients">
+            @if (patients.length > 0) {
+              <div class="patients-list">
+                <table class="patients-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Age</th>
+                      <th>Gender</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (p of patients; track p.id || $index) {
+                      <tr>
+                        <td>{{ p.name }}</td>
+                        <td>{{ p.email }}</td>
+                        <td>{{ p.age }}</td>
+                        <td>{{ p.gender }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="no-patients">
+                <p>No patients found. @if ((isAdmin$ | async) || (isDoctor$ | async)) { <span (click)="openAddPatientModal()" class="add-link">Add one now</span> }</p>
+              </div>
+            }
+          </div>
+        }
       </div>
-
-      <!-- Empty State -->
-      <div class="no-patients" *ngIf="!isLoadingPatients && patient.length === 0">
-        <p>No patients found. <span (click)="openAddPatientModal()" *ngIf="isAdmin() || isDoctor()" class="add-link">Add one now</span></p>
-      </div>
-    </div>
+    }
 
     <!-- Add Patient Modal -->
-    <app-add-patient
-      *ngIf="showAddPatientModal"
-      (close)="closeAddPatientModal()"
-      (patientAdded)="onPatientAdded($event)"
-    ></app-add-patient>
+    @if (showAddPatientModal) {
+      <app-add-patient
+        (close)="closeAddPatientModal()"
+        (patientAdded)="onPatientAdded($event)"
+      ></app-add-patient>
+    }
 
-    <div class="user-details" *ngIf="currentUser">
-      <h3>Your Details</h3>
-      <div class="details-grid">
-        <div class="detail-item">
-          <label>Email:</label>
-          <p>{{ currentUser.email }}</p>
-        </div>
-        <div class="detail-item">
-          <label>Role:</label>
-          <p>{{ currentUser.role }}</p>
-        </div>
-        <div class="detail-item">
-          <label>User ID:</label>
-          <p>{{ currentUser.id }}</p>
+    <div *ngIf="(currentUser$ | async) as user">
+      <div class="user-details">
+        <h3>Your Details</h3>
+        <div class="details-grid">
+          <div class="detail-item">
+            <label>Email:</label>
+            <p>{{ user?.email }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Role:</label>
+            <p>{{ user?.role }}</p>
+          </div>
+          <div class="detail-item">
+            <label>User ID:</label>
+            <p>{{ user?.id }}</p>
+          </div>
         </div>
       </div>
     </div>

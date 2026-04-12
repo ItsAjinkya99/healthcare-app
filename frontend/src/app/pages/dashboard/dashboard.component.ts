@@ -1,10 +1,16 @@
 
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
-import { PatientService } from '../../services/patient.service';
+import { Store } from '@ngrx/store';
+import { Subject, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { AppState } from '../../store/app.state';
+import { selectUser, selectUserRole } from '../../store/auth/auth.selectors';
+import { selectPatients, selectPatientsLoading, selectPatientsError } from '../../store/patient/patient.selectors';
+import { loadUserFromStorage, logout } from '../../store/auth/auth.actions';
 import { AddPatientComponent } from './add-patient/add-patient.component';
+import { getPatients, loadPatientsFromStorage } from '../../store/patient/patient.actions';
 
 @Component({
   selector: 'app-dashboard',
@@ -13,36 +19,49 @@ import { AddPatientComponent } from './add-patient/add-patient.component';
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
-export class DashboardComponent implements OnInit {
-  currentUser: any = null;
-  patient: any[] = [];
+export class DashboardComponent implements OnInit, OnDestroy {
   showAddPatientModal = false;
-  isLoadingPatients = true;
-  loadingError: string | null = null;
 
-  constructor(private auth: AuthService, private router: Router, private patientService: PatientService) { }
+  // Selectors from store
+  currentUser$!: Observable<any>;
+  patients$!: Observable<any>;
+  isLoadingPatients$!: Observable<boolean>;
+  loadingError$!: Observable<string | null>;
+  userRole$!: Observable<string | null>;
+
+  // Helper observable for checking roles (defined in ngOnInit)
+  isAdmin$!: Observable<boolean>;
+  isDoctor$!: Observable<boolean>;
+  isReceptionist$!: Observable<boolean>;
+
+  private destroy$ = new Subject<void>();
+
+  constructor(private store: Store<AppState>, private router: Router) { }
 
   ngOnInit() {
-    this.currentUser = this.auth.getUser();
-    this.getPatients();
+    // Initialize selectors after store is available
+    this.currentUser$ = this.store.select(selectUser);
+    this.patients$ = this.store.select(selectPatients);
+    this.isLoadingPatients$ = this.store.select(selectPatientsLoading);
+    this.loadingError$ = this.store.select(selectPatientsError);
+    this.userRole$ = this.store.select(selectUserRole);
+
+    // Helper observables for checking roles
+    this.isAdmin$ = this.userRole$.pipe(map(role => role === 'ADMIN'));
+    this.isDoctor$ = this.userRole$.pipe(map(role => role === 'DOCTOR'));
+    this.isReceptionist$ = this.userRole$.pipe(map(role => role === 'RECEPTIONIST'));
+
+    // Dispatch action to load patients
+
+    localStorage.getItem('patients') ? this.store.dispatch(loadPatientsFromStorage()) : this.store.dispatch(getPatients());
+
+    this.store.dispatch(loadUserFromStorage());
+
   }
 
-  getPatients() {
-    this.isLoadingPatients = true;
-    this.loadingError = null;
-    this.patientService.getPatients().subscribe({
-      next: (res) => {
-        console.log('Fetched patients:', res);
-        this.patient = res;
-        this.isLoadingPatients = false;
-        console.log(this.patient.length)
-      },
-      error: (err) => {
-        console.error('Failed to fetch patients:', err);
-        this.isLoadingPatients = false;
-        this.loadingError = err.error?.message || 'Failed to load patients. Please try again.';
-      }
-    });
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   openAddPatientModal(): void {
@@ -54,32 +73,12 @@ export class DashboardComponent implements OnInit {
   }
 
   onPatientAdded(newPatient: any): void {
-    this.patient.push(newPatient);
-  }
-
-  isAdmin(): boolean {
-    return this.currentUser?.role === 'ADMIN';
-  }
-
-  isDoctor(): boolean {
-    return this.currentUser?.role === 'DOCTOR';
-  }
-
-  isReceptionist(): boolean {
-    return this.currentUser?.role === 'RECEPTIONIST';
+    // Patient will be added to store via effects
+    this.showAddPatientModal = false;
   }
 
   logout() {
-    this.auth.logout().subscribe({
-      next: () => {
-        this.auth.clearAccessToken();
-        this.router.navigate(['/']);
-      },
-      error: (err) => {
-        console.error('Logout failed:', err);
-        this.auth.clearAccessToken();
-        this.router.navigate(['/']);
-      }
-    });
+    this.store.dispatch(logout());
+    this.router.navigate(['/']);
   }
 }

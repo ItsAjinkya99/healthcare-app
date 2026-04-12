@@ -3,13 +3,23 @@
     <h2>Create Account</h2>
     <p class="subtitle">Join Healthcare Management System</p>
 
-    <div *ngIf="errorMessage" class="error-message">
-      {{ errorMessage }}
-    </div>
+    @if (error$ | async) {
+      <div class="error-message">
+        {{ error$ | async }}
+      </div>
+    }
 
-    <div *ngIf="successMessage" class="success-message">
-      {{ successMessage }}
-    </div>
+    @if (errorMessage) {
+      <div class="error-message">
+        {{ errorMessage }}
+      </div>
+    }
+
+    @if (successMessage) {
+      <div class="success-message">
+        {{ successMessage }}
+      </div>
+    }
 
     <form (ngSubmit)="register()" #registerForm="ngForm">
       <div class="form-group">
@@ -67,10 +77,10 @@
 
       <button 
         type="submit" 
-        [disabled]="isLoading"
+        [disabled]="(isLoading$ | async) || false"
         class="register-btn"
       >
-        {{ isLoading ? 'Creating Account...' : 'Create Account' }}
+        {{ ((isLoading$ | async) || false) ? 'Creating Account...' : 'Create Account' }}
       </button>
     </form>
 

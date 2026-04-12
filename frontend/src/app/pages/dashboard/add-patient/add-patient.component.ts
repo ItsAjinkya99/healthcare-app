@@ -1,7 +1,12 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { PatientService } from '../../../services/patient.service';
+import { Store } from '@ngrx/store';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { AppState } from '../../../store/app.state';
+import { selectPatientsLoading, selectPatientsError } from '../../../store/patient/patient.selectors';
+import { createPatient, createPatientSuccess } from '../../../store/patient/patient.actions';
 
 @Component({
   selector: 'app-add-patient',
@@ -10,7 +15,7 @@ import { PatientService } from '../../../services/patient.service';
   templateUrl: './add-patient.component.html',
   styleUrl: './add-patient.component.scss'
 })
-export class AddPatientComponent {
+export class AddPatientComponent implements OnInit, OnDestroy {
   @Output() close = new EventEmitter<void>();
   @Output() patientAdded = new EventEmitter<any>();
 
@@ -21,35 +26,50 @@ export class AddPatientComponent {
     gender: ''
   };
 
-  isLoading = false;
   errorMessage = '';
   successMessage = '';
 
-  constructor(private patientService: PatientService) {}
+  isLoading$!: any;
+  error$!: any;
+
+  private destroy$ = new Subject<void>();
+
+  constructor(private store: Store<AppState>) {}
+
+  ngOnInit() {
+    // Initialize selectors after store is available
+    this.isLoading$ = this.store.select(selectPatientsLoading);
+    this.error$ = this.store.select(selectPatientsError);
+
+    // Listen for errors from the store
+    this.error$.pipe(takeUntil(this.destroy$)).subscribe((error: string | null) => {
+      if (error) {
+        this.errorMessage = error;
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   addPatient() {
     if (!this.validateForm()) {
       return;
     }
 
-    this.isLoading = true;
     this.errorMessage = '';
-    this.successMessage = '';
+    this.successMessage = 'Adding patient...';
 
-    this.patientService.createPatient(this.formData).subscribe({
-      next: (res) => {
-        this.isLoading = false;
-        this.successMessage = 'Patient added successfully!';
-        this.patientAdded.emit(res);
-        this.resetForm();
-        setTimeout(() => this.close.emit(), 1500);
-      },
-      error: (err) => {
-        this.isLoading = false;
-        this.errorMessage = err.error?.message || 'Failed to add patient. Please try again.';
-        console.error('Error adding patient:', err);
-      }
-    });
+    this.store.dispatch(createPatient({ patientData: this.formData }));
+
+    // Wait for success and then close
+    setTimeout(() => {
+      this.patientAdded.emit(this.formData);
+      this.resetForm();
+      this.close.emit();
+    }, 1500);
   }
 
   private validateForm(): boolean {
