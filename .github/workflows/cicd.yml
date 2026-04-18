@@ -21,16 +21,16 @@ jobs:
           docker build -t ajinkya5194/healthcare-backend .
           docker push ${{ secrets.DOCKER_USERNAME }}/healthcare-backend:latest
 
-deploy:
-  needs: build
-  runs-on: node-runner
-  steps:
-    - name: Pull image from Docker Hub
-      run: docker pull ${{ secrets.DOCKER_USERNAME }}/healthcare-backend:latest
-    - name: Remove old container if exists
-      run: |
-        if [ $(docker ps -aq -f name=healthcare-backend) ]; then
-          docker rm -f healthcare-backend
-        fi
-    - name: Run Docker container
-      run: docker run -d -p 5000:5000 --name healthcare-backend ${{ secrets.DOCKER_USERNAME }}/healthcare-backend:latest
+  deploy:
+    needs: build
+    runs-on: node-runner
+    steps:
+      - name: Pull image from Docker Hub
+        run: docker pull ${{ secrets.DOCKER_USERNAME }}/healthcare-backend:latest
+      - name: Remove old container if exists
+        run: |
+          if [ $(docker ps -aq -f name=healthcare-backend) ]; then
+            docker rm -f healthcare-backend
+          fi
+      - name: Run Docker container
+        run: docker run -d -p 5000:5000 --name healthcare-backend ${{ secrets.DOCKER_USERNAME }}/healthcare-backend:latest
