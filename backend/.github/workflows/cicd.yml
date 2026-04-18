@@ -1,0 +1,36 @@
+name: Deploy node app
+on:
+  push:
+    branches: [ practice/deployment ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Create .env file
+        run: |
+          echo "PORT=5000" > .env
+          echo "MONGO_URI=mongodb+srv://ajinkyapatharkar5194_db_user:${{secrets.MONGO_DB_PASSWORD}}@dev-cluster.juowvij.mongodb.net/?appName=dev-cluster" >> .env
+          echo "JWT_SECRET=supersecret" >> .env
+          echo "JWT_REFRESH_SECRET=your_refresh_token_secret_key_987654321" >> .env
+      - name: login to docker hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push docker image
+        run: |
+          docker build -t ajinkya5194/healthcare-backend .
+          docker push ${{ secrets.DOCKER_USERNAME }}/healthcare-backend:latest
+
+deploy:
+  needs: build
+  runs-on: node-runner
+  steps:
+    - name: Pull image from Docker Hub
+      run: docker pull ${{ secrets.DOCKER_USERNAME }}/healthcare-backend:latest
+    - name: Remove old container if exists
+      run: |
+        if [ $(docker ps -aq -f name=healthcare-backend) ]; then
+          docker rm -f healthcare-backend
+        fi
+    - name: Run Docker container
+      run: docker run -d -p 5000:5000 --name healthcare-backend ${{ secrets.DOCKER_USERNAME }}/healthcare-backend:latest
